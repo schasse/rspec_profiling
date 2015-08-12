@@ -22,7 +22,7 @@ module RspecProfiling
 
     def example_started(example)
       example = example.example if example.respond_to?(:example)
-      @current_example = Example.new(example)
+      Thread.current['current_example'] = @current_example = Example.new(example)
     end
 
     def example_finished(*args)
@@ -37,6 +37,8 @@ module RspecProfiling
         time:          @current_example.time,
         query_count:   @current_example.query_count,
         query_time:    @current_example.query_time,
+        moped_count:   @current_example.moped_count,
+        moped_time:    @current_example.moped_time,
         request_count: @current_example.request_count,
         request_time:  @current_example.request_time
       })
@@ -52,6 +54,21 @@ module RspecProfiling
     def start_counting_queries
       ActiveSupport::Notifications.subscribe("sql.active_record") do |name, start, finish, id, query|
         @current_example.try(:log_query, query, start, finish)
+      end
+
+      ::Moped::Node.class_eval do
+        private
+
+        def logging_with_instrumentation(operations, &block)
+          start = Time.now
+          output = logging_without_instrumentation(operations, &block)
+          finish = Time.now
+          Thread.current['current_example'].try(:log_moped, nil, start, finish)
+          output
+        end
+
+        alias_method :logging_without_instrumentation, :logging
+        alias_method :logging, :logging_with_instrumentation
       end
     end
 

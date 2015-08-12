@@ -14,6 +14,8 @@ module RspecProfiling
         time
         query_count
         query_time
+        moped_count
+        moped_time
         request_count
         request_time
       }

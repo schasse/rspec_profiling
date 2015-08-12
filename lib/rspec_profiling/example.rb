@@ -38,7 +38,7 @@ module RspecProfiling
     def status
       execution_result.status
     end
-    
+
     def exception
       execution_result.exception
     end
@@ -55,6 +55,14 @@ module RspecProfiling
       counts[:query_time]
     end
 
+    def moped_count
+      counts[:moped_count]
+    end
+
+    def moped_time
+      counts[:moped_time]
+    end
+
     def request_count
       counts[:request_count]
     end
@@ -68,6 +76,11 @@ module RspecProfiling
         counts[:query_count] += 1
         counts[:query_time] += (finish - start)
       end
+    end
+
+    def log_moped(query, start, finish)
+      counts[:moped_count] += 1
+      counts[:moped_time] += (finish - start)
     end
 
     def log_request(request, start, finish)
