@@ -60,10 +60,13 @@ module RspecProfiling
         private
 
         def logging_with_instrumentation(operations, &block)
-          start = Time.now
+          all_queries = Thread.current['all_queries'] ||= {}
+          start = Time.now.to_f
           output = logging_without_instrumentation(operations, &block)
-          finish = Time.now
+          finish = Time.now.to_f
           Thread.current['current_example'].try(:log_moped, nil, start, finish)
+          query = operations.first.log_inspect
+          all_queries[query] = (all_queries[query] || 0) + finish - start
           output
         end
 
@@ -75,6 +78,22 @@ module RspecProfiling
     def start_counting_requests
       ActiveSupport::Notifications.subscribe("process_action.action_controller") do |name, start, finish, id, request|
         @current_example.try(:log_request, request, start, finish)
+      end
+    end
+  end
+end
+
+if Rails.env.test?
+  RSpec.configure do |config|
+    config.after(:suite) do
+      all_queries_file_content =
+        Thread
+        .current['all_queries']
+        .sort { |q1, q2| q2.last <=> q1.last } # sort by time
+        .map { |query, time| "#{query} (#{time}s)" }
+        .join("\n")
+      File.open(RspecProfiling.config.csv_path.call + 'queries', 'w') do |f|
+        f.write all_queries_file_content
       end
     end
   end
