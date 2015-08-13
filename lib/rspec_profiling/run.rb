@@ -59,19 +59,19 @@ module RspecProfiling
       ::Moped::Node.class_eval do
         private
 
-        def logging_with_instrumentation(operations, &block)
+        def logging_with_profiling(operations, &block)
           all_queries = Thread.current['all_queries'] ||= {}
           start = Time.now.to_f
-          output = logging_without_instrumentation(operations, &block)
-          finish = Time.now.to_f
-          Thread.current['current_example'].try(:log_moped, nil, start, finish)
+          output = logging_without_profiling(operations, &block)
+          stop = Time.now.to_f
+          Thread.current['current_example'].try(:log_moped, nil, start, stop)
           query = operations.first.log_inspect
-          all_queries[query] = (all_queries[query] || 0) + finish - start
+          all_queries[query] = (all_queries[query] || 0) + stop - start
           output
         end
 
-        alias_method :logging_without_instrumentation, :logging
-        alias_method :logging, :logging_with_instrumentation
+        alias_method :logging_without_profiling, :logging
+        alias_method :logging, :logging_with_profiling
       end
     end
 
@@ -83,7 +83,7 @@ module RspecProfiling
   end
 end
 
-if Rails.env.test?
+if Rails.env.test? && RSpec.methods.include?(:configure)
   RSpec.configure do |config|
     config.after(:suite) do
       all_queries_file_content =
