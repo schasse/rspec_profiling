@@ -42,11 +42,11 @@ module RspecProfiling
         end
       end
 
-      private
-
       def output
         @output ||= ::CSV.open(path, "w").tap { |csv| csv << HEADERS }
       end
+
+      private
 
       def path
         RspecProfiling.config.csv_path.call

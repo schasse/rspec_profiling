@@ -9,6 +9,9 @@ require "rspec_profiling/collectors/psql"
 require "rspec_profiling/vcs/git"
 require "rspec_profiling/vcs/svn"
 require "rspec_profiling/vcs/git_svn"
+require "rspec_profiling/profiling_stats"
+require "rspec_profiling/profiling_stats"
+require "rspec_profiling/moped_queries_profiler"
 
 module RspecProfiling
   class Railtie < Rails::Railtie

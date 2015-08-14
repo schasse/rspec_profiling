@@ -11,23 +11,14 @@ module RspecProfiling
       end
 
       def dump
-        all_queries_file_content =
-          queries
-          .sort { |q1, q2| q2.last <=> q1.last } # sort by time
-          .take(200) # dump only 200 slowest
-          .map { |query, time| "#{query} (#{time}s)" }
-          .join("\n")
-        File.open(RspecProfiling.config.csv_path.call + 'queries', 'w') do |f|
-          f.write all_queries_file_content
+        File.open(RspecProfiling.config.moped_queries_path.call, 'w') do |f|
+          f.write(
+            queries
+              .sort { |q1, q2| q2.last <=> q1.last } # sort by time
+              .take(200) # dump only 200 slowest
+              .map { |query, time| "#{query} (#{time}s)" }
+              .join("\n"))
         end
-      end
-    end
-  end
-
-  if Rails.env.test? && RSpec.methods.include?(:configure)
-    RSpec.configure do |config|
-      config.after(:suite) do
-        MopedQueriesProfiler.dump
       end
     end
   end

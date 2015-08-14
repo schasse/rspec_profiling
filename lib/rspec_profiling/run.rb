@@ -5,6 +5,7 @@ require "rspec_profiling/vcs/git_svn"
 require "rspec_profiling/collectors/sql"
 require "rspec_profiling/collectors/psql"
 require "rspec_profiling/collectors/csv"
+require "rspec_profiling/moped_queries_profiler"
 
 module RspecProfiling
   class Run
@@ -22,7 +23,9 @@ module RspecProfiling
 
     def example_started(example)
       example = example.example if example.respond_to?(:example)
-      Thread.current['current_example'] = @current_example = Example.new(example)
+      @current_example =
+        # have the current_example available in moped count
+        Thread.current['moped_current_example'] = Example.new(example)
     end
 
     def example_finished(*args)
@@ -47,9 +50,11 @@ module RspecProfiling
     alias :example_passed :example_finished
     alias :example_failed :example_finished
 
+    attr_reader :collector
+
     private
 
-    attr_reader :collector, :vcs
+    attr_reader :vcs
 
     def start_counting_queries
       ActiveSupport::Notifications.subscribe("sql.active_record") do |name, start, finish, id, query|
@@ -64,7 +69,8 @@ module RspecProfiling
           output = logging_without_profiling(operations, &block)
           stop = Time.now.to_f
 
-          Thread.current['current_example'].try(:log_moped, nil, start, stop)
+          Thread.current['moped_current_example'].
+            try(:log_moped, nil, start, stop)
           MopedQueriesProfiler.log operations, start, stop
 
           output
